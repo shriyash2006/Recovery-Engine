@@ -12,14 +12,14 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { personalizedMissedLectureRecovery } from "@/ai/flows/personalized-missed-lecture-recovery"
 
-// Updated student data with provided emails and random names
+// Updated student data with provided emails and names
 const initialStudents = [
   { id: "R2024-101", name: "Aria Sterling", email: "plot-manlike-fancy@duck.com", present: false },
   { id: "R2024-102", name: "Cyrus Thorne", email: "wages-idly-disk@duck.com", present: false },
   { id: "R2024-103", name: "Lyra Vance", email: "jazz-twig-paprika@duck.com", present: false },
   { id: "R2024-104", name: "Kaelen Brooks", email: "pants-destiny-lid@duck.com", present: false },
   { id: "R2024-105", name: "Elara Moon", email: "impale-bats-drool@duck.com", present: false },
-  { id: "R2024-106", name: "Silas Weaver", email: "silas.w@university.edu", present: true },
+  { id: "R2024-106", name: "Silas Vane", email: "slouchy-stem-crook@duck.com", present: false },
 ]
 
 export default function AttendancePage() {
