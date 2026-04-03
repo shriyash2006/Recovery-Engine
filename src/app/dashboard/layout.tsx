@@ -15,6 +15,7 @@ import { GraduationCap, LogOut, Bell } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { FirebaseClientProvider } from "@/firebase/client-provider"
 
 export default function DashboardLayout({
   children,
@@ -22,7 +23,8 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <SidebarProvider>
+    <FirebaseClientProvider>
+      <SidebarProvider>
       <Sidebar collapsible="icon">
         <SidebarHeader className="h-16 flex items-center px-4">
           <div className="flex items-center gap-3">
@@ -75,5 +77,6 @@ export default function DashboardLayout({
         </div>
       </SidebarInset>
     </SidebarProvider>
+    </FirebaseClientProvider>
   )
 }

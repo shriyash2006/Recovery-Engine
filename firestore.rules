@@ -149,12 +149,13 @@ service cloud.firestore {
      * @description Automated absentee notifications. 
      * @path /absenteeNotifications/{notificationId}
      * @allow (get, list) if isDocTeacher or isDocStudent.
+     * @allow (create) if isSignedIn - allows any authenticated user to create notifications
      * @deny (update, delete) for all; notifications are audit logs.
      * @principle Auditable logic; shared access for transparency between teacher and student.
      */
     match /absenteeNotifications/{notificationId} {
       allow get, list: if isDocTeacher() || isDocStudent();
-      allow create: if isIncomingTeacher(); // Allows teacher-side app logic to trigger records
+      allow create: if isSignedIn(); // Allows any authenticated user to create notifications
       allow update: if false;
       allow delete: if false;
     }

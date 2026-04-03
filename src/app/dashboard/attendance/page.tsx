@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -11,9 +11,11 @@ import { Search, Upload, Send, Download } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { personalizedMissedLectureRecovery } from "@/ai/flows/personalized-missed-lecture-recovery"
-import { useFirestore } from "@/firebase"
+import { useFirestore, useAuth } from "@/firebase"
 import { collection, serverTimestamp } from "firebase/firestore"
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates"
+import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login"
+import { useUser } from "@/firebase/provider"
 
 // Student data with requested emails
 const initialStudents = [
@@ -30,13 +32,39 @@ export default function AttendancePage() {
   const [isPosting, setIsPosting] = useState(false)
   const { toast } = useToast()
   const db = useFirestore()
+  const auth = useAuth()
+  const { user, isUserLoading } = useUser()
+
+  // Auto-login anonymously if not authenticated
+  useEffect(() => {
+    if (!isUserLoading && !user && auth) {
+      console.log("Auto-signing in anonymously...")
+      initiateAnonymousSignIn(auth)
+    }
+  }, [user, isUserLoading, auth])
 
   const toggleAttendance = (id: string) => {
     setStudents(prev => prev.map(s => s.id === id ? { ...s, present: !s.present } : s))
   }
 
   const handlePost = async () => {
-    if (!db) return
+    if (!db) {
+      toast({
+        variant: "destructive",
+        title: "Firebase not initialized",
+        description: "Please refresh the page and try again.",
+      })
+      return
+    }
+
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Not authenticated",
+        description: "Please wait while we sign you in...",
+      })
+      return
+    }
     
     setIsPosting(true)
     const absentees = students.filter(s => !s.present)
@@ -52,6 +80,7 @@ export default function AttendancePage() {
     
     try {
       const notificationRef = collection(db, "absenteeNotifications")
+      const emailResults = []
       
       for (const student of absentees) {
         // 1. Generate AI Recovery Content
@@ -70,31 +99,76 @@ export default function AttendancePage() {
           ]
         })
 
-        // 2. Persist to Firestore (triggers automated email system)
-        addDocumentNonBlocking(notificationRef, {
+        // 2. Send email via API
+        // Sending to your verified Resend email address
+        const emailResponse = await fetch('/api/send-recovery-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: 'shriyashsahu2006@gmail.com', // Your verified email in Resend
+            studentName: student.name,
+            subjectName: "Operating Systems (CS302)",
+            lectureTopic: "Process Scheduling Algorithms",
+            lectureDate: new Date().toISOString().split('T')[0],
+            summary: recoveryData.lectureSummary,
+          }),
+        })
+
+        const emailResult = await emailResponse.json()
+        
+        if (!emailResult.success) {
+          console.error(`Failed to send email to ${student.name}:`, emailResult.error)
+        } else {
+          console.log(`Email sent successfully to ${student.name}:`, emailResult.messageId)
+        }
+        
+        emailResults.push({ 
+          student: student.name, 
+          success: emailResult.success,
+          error: emailResult.error 
+        })
+
+        // 3. Persist to Firestore for tracking
+        await addDocumentNonBlocking(notificationRef, {
+          teacherId: user.uid,
           studentId: student.id,
           studentEmail: student.email,
           lectureTopic: "Process Scheduling Algorithms",
-          emailSubject: recoveryData.emailSubject,
-          emailSummary: recoveryData.lectureSummary,
-          emailBody: recoveryData.emailBody,
-          status: "Sent",
+          emailSubject: recoveryData.emailSubject || "Missed Class Recovery",
+          emailSummary: recoveryData.lectureSummary || "",
+          emailBody: recoveryData.emailBody || "",
+          status: emailResult.success ? "Sent" : "Failed",
+          emailMessageId: emailResult.messageId || null,
           notificationDateTime: serverTimestamp(),
-          // Metadata for tracking
           attendanceId: `att_${Date.now()}_${student.id}`,
           lecturePlanId: "lp_os_scheduling_001",
         })
       }
       
-      toast({
-        title: "Attendance Posted Successfully",
-        description: `Recovery packages generated and emails dispatched to ${absentees.length} students.`,
-      })
+      const successCount = emailResults.filter(r => r.success).length
+      const failCount = emailResults.filter(r => !r.success).length
+      
+      if (failCount > 0) {
+        const failedStudents = emailResults.filter(r => !r.success)
+        console.error('Failed emails:', failedStudents)
+        
+        toast({
+          variant: failCount === absentees.length ? "destructive" : "default",
+          title: failCount === absentees.length ? "All Emails Failed" : "Attendance Posted with Errors",
+          description: `Emails sent: ${successCount} successful, ${failCount} failed. Check console for details.`,
+        })
+      } else {
+        toast({
+          title: "Attendance Posted Successfully",
+          description: `Recovery emails sent to all ${successCount} absent students.`,
+        })
+      }
     } catch (error) {
+      console.error("Error posting attendance:", error)
       toast({
         variant: "destructive",
         title: "Error processing recovery",
-        description: "Could not generate or send missed lecture packages.",
+        description: error instanceof Error ? error.message : "Could not generate or send missed lecture packages.",
       })
     } finally {
       setIsPosting(false)
