@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -11,8 +11,11 @@ import { Search, Upload, Send, Download } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { personalizedMissedLectureRecovery } from "@/ai/flows/personalized-missed-lecture-recovery"
+import { useFirestore } from "@/firebase"
+import { collection, serverTimestamp } from "firebase/firestore"
+import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates"
 
-// Updated student data with provided emails and names, setting default to present
+// Student data with requested emails
 const initialStudents = [
   { id: "R2024-101", name: "Aria Sterling", email: "plot-manlike-fancy@duck.com", present: true },
   { id: "R2024-102", name: "Cyrus Thorne", email: "wages-idly-disk@duck.com", present: true },
@@ -26,12 +29,15 @@ export default function AttendancePage() {
   const [students, setStudents] = useState(initialStudents)
   const [isPosting, setIsPosting] = useState(false)
   const { toast } = useToast()
+  const db = useFirestore()
 
   const toggleAttendance = (id: string) => {
     setStudents(prev => prev.map(s => s.id === id ? { ...s, present: !s.present } : s))
   }
 
   const handlePost = async () => {
+    if (!db) return
+    
     setIsPosting(true)
     const absentees = students.filter(s => !s.present)
     
@@ -45,9 +51,11 @@ export default function AttendancePage() {
     }
     
     try {
-      // Calling the AI recovery flow for each absentee to generate summaries and emails
+      const notificationRef = collection(db, "absenteeNotifications")
+      
       for (const student of absentees) {
-        await personalizedMissedLectureRecovery({
+        // 1. Generate AI Recovery Content
+        const recoveryData = await personalizedMissedLectureRecovery({
           studentName: student.name,
           studentEmail: student.email,
           lectureTopic: "Process Scheduling Algorithms",
@@ -61,17 +69,32 @@ export default function AttendancePage() {
             { heading: "Round Robin (RR) Mechanics", pageNumbers: [7, 8, 9] }
           ]
         })
+
+        // 2. Persist to Firestore (triggers automated email system)
+        addDocumentNonBlocking(notificationRef, {
+          studentId: student.id,
+          studentEmail: student.email,
+          lectureTopic: "Process Scheduling Algorithms",
+          emailSubject: recoveryData.emailSubject,
+          emailSummary: recoveryData.lectureSummary,
+          emailBody: recoveryData.emailBody,
+          status: "Sent",
+          notificationDateTime: serverTimestamp(),
+          // Metadata for tracking
+          attendanceId: `att_${Date.now()}_${student.id}`,
+          lecturePlanId: "lp_os_scheduling_001",
+        })
       }
       
       toast({
-        title: "Attendance Posted & AI Recovery Triggered",
-        description: `Recovery packages generated and simulated emails sent to ${absentees.length} students.`,
+        title: "Attendance Posted Successfully",
+        description: `Recovery packages generated and emails dispatched to ${absentees.length} students.`,
       })
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error processing recovery",
-        description: "Could not generate missed lecture packages.",
+        description: "Could not generate or send missed lecture packages.",
       })
     } finally {
       setIsPosting(false)
@@ -83,7 +106,7 @@ export default function AttendancePage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-headline font-bold text-primary">Attendance</h2>
-          <p className="text-muted-foreground font-body">Mark absentees by unchecking them to trigger the AI Recovery Engine.</p>
+          <p className="text-muted-foreground font-body">Uncheck students to mark them absent and trigger AI Recovery.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2 font-body border-primary text-primary hover:bg-primary/5">
