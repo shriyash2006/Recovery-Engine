@@ -1,0 +1,162 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * CORE PHILOSOPHY
+     * This ruleset enforces a strict pedagogical ownership model designed for an educational environment.
+     * Access is governed by two primary roles: Teachers (owners/facilitators) and Students (consumers/participants).
+     * 
+     * DATA STRUCTURE
+     * - /teachers/{teacherId}: Private profiles for educators.
+     * - /students/{studentId}: Profiles for learners.
+     * - /courses/{courseId}: Root entity for academic subjects, owned by a teacher.
+     * - /courses/{courseId}/...: Sub-collections for plans, materials, enrollments, and attendance.
+     * - /absenteeNotifications/{notificationId}: Top-level collection for cross-course communication records.
+     * 
+     * KEY SECURITY DECISIONS
+     * 1. Teacher Dominance: Teachers have full CRUD access to courses and related sub-data where their teacherId is present.
+     * 2. Student Privacy: Student-specific data (Attendance, Notifications, Enrollments) is restricted to the specific student and the course teacher.
+     * 3. Denormalization for Performance: Authorization relies on denormalized 'teacherId' and 'studentId' fields within documents to avoid costly get() calls.
+     * 4. Relational Integrity: On creation, rules enforce that the internal 'teacherId' or 'studentId' matches the authenticated user.
+     */
+
+    // --- Helper Functions ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // Checks if the authenticated user is the teacher associated with the document data
+    function isDocTeacher() {
+      return isSignedIn() && request.auth.uid == resource.data.teacherId;
+    }
+
+    // Checks if the authenticated user is the teacher associated with the incoming data
+    function isIncomingTeacher() {
+      return isSignedIn() && request.auth.uid == request.resource.data.teacherId;
+    }
+
+    // Checks if the authenticated user is the student associated with the document data
+    function isDocStudent() {
+      return isSignedIn() && request.auth.uid == resource.data.studentId;
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Rules for Teacher profiles. Access is strictly limited to the owner.
+     * @path /teachers/{teacherId}
+     * @allow (get, create, update) if the authenticated user's UID matches the {teacherId}.
+     * @deny (list, delete) by default for privacy and data retention.
+     * @principle Path-based ownership and verified identity.
+     */
+    match /teachers/{teacherId} {
+      allow get: if isOwner(teacherId);
+      allow list: if false;
+      allow create: if isOwner(teacherId) && request.resource.data.id == teacherId;
+      allow update: if isExistingOwner(teacherId) && request.resource.data.id == teacherId;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Student profiles. Readable by the student or any signed-in teacher.
+     * @path /students/{studentId}
+     * @allow (get) if isSignedIn; (create, update) if isOwner(studentId).
+     * @deny (list) to prevent user enumeration.
+     * @principle Verified identity for self-management; permissive get for teachers.
+     */
+    match /students/{studentId} {
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isOwner(studentId) && request.resource.data.id == studentId;
+      allow update: if isExistingOwner(studentId) && request.resource.data.id == studentId;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Course root documents. Managed by teachers, readable by any signed-in user.
+     * @path /courses/{courseId}
+     * @allow (get, list) if isSignedIn; (create, update, delete) if isTeacherOfCourse.
+     * @deny (write) if the teacherId does not match the authenticated user.
+     * @principle Ownership-based writes using denormalized teacherId.
+     */
+    match /courses/{courseId} {
+      allow get, list: if isSignedIn();
+      allow create: if isIncomingTeacher();
+      allow update: if isDocTeacher() && request.resource.data.teacherId == resource.data.teacherId;
+      allow delete: if isExistingOwner(resource.data.teacherId);
+    }
+
+    /**
+     * @description Lecture plans and Study materials. Managed by the course teacher.
+     * @path /courses/{courseId}/lecturePlans/{lecturePlanId} | /courses/{courseId}/studyMaterials/{materialId}
+     * @allow (get, list) if isSignedIn; (create, update, delete) if isDocTeacher.
+     * @deny (write) for students.
+     * @principle Hierarchical access controlled by denormalized ownership fields.
+     */
+    match /courses/{courseId}/lecturePlans/{lecturePlanId} {
+      allow get, list: if isSignedIn();
+      allow create: if isIncomingTeacher();
+      allow update: if isDocTeacher() && request.resource.data.teacherId == resource.data.teacherId;
+      allow delete: if isExistingOwner(resource.data.teacherId);
+    }
+
+    match /courses/{courseId}/studyMaterials/{studyMaterialId} {
+      allow get, list: if isSignedIn();
+      allow create: if isIncomingTeacher();
+      allow update: if isDocTeacher() && request.resource.data.teacherId == resource.data.teacherId;
+      allow delete: if isExistingOwner(resource.data.teacherId);
+    }
+
+    /**
+     * @description Course Enrollments. Link between student and teacher.
+     * @path /courses/{courseId}/enrollments/{enrollmentId}
+     * @allow (get, list) if isDocTeacher or isDocStudent.
+     * @deny (create, update, delete) unless the teacher manages it.
+     * @principle Shared access pattern using denormalized IDs for both parties.
+     */
+    match /courses/{courseId}/enrollments/{enrollmentId} {
+      allow get, list: if isDocTeacher() || isDocStudent();
+      allow create: if isIncomingTeacher();
+      allow update: if isDocTeacher() && request.resource.data.teacherId == resource.data.teacherId;
+      allow delete: if isExistingOwner(resource.data.teacherId);
+    }
+
+    /**
+     * @description Attendance records for specific lectures.
+     * @path /courses/{courseId}/lecturePlans/{lecturePlanId}/attendanceRecords/{attendanceId}
+     * @allow (get, list) if isDocTeacher or isDocStudent; (create, update, delete) if isDocTeacher.
+     * @deny (write) for students; attendance must be recorded by authorized teachers.
+     * @principle Relational integrity and teacher-only data modification.
+     */
+    match /courses/{courseId}/lecturePlans/{lecturePlanId}/attendanceRecords/{attendanceId} {
+      allow get, list: if isDocTeacher() || isDocStudent();
+      allow create: if isIncomingTeacher();
+      allow update: if isDocTeacher() && request.resource.data.teacherId == resource.data.teacherId;
+      allow delete: if isExistingOwner(resource.data.teacherId);
+    }
+
+    /**
+     * @description Automated absentee notifications. 
+     * @path /absenteeNotifications/{notificationId}
+     * @allow (get, list) if isDocTeacher or isDocStudent.
+     * @deny (update, delete) for all; notifications are audit logs.
+     * @principle Auditable logic; shared access for transparency between teacher and student.
+     */
+    match /absenteeNotifications/{notificationId} {
+      allow get, list: if isDocTeacher() || isDocStudent();
+      allow create: if isIncomingTeacher(); // Allows teacher-side app logic to trigger records
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

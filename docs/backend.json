@@ -1,0 +1,493 @@
+{
+  "entities": {
+    "Teacher": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Teacher",
+      "type": "object",
+      "description": "Represents a teacher or administrator in the system, responsible for managing courses, materials, and attendance. Assumes external authentication for login.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Teacher entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the teacher."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the teacher, used for communication and notifications.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email"
+      ]
+    },
+    "Student": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Student",
+      "type": "object",
+      "description": "Stores details about a student enrolled in one or more courses.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Student entity."
+        },
+        "registrationNumber": {
+          "type": "string",
+          "description": "The unique registration number assigned to the student by the institution."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the student."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the student, used for automated absentee notifications.",
+          "format": "email"
+        },
+        "mobileNumber": {
+          "type": "string",
+          "description": "The mobile contact number of the student (optional)."
+        }
+      },
+      "required": [
+        "id",
+        "registrationNumber",
+        "name",
+        "email"
+      ]
+    },
+    "Course": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Course",
+      "type": "object",
+      "description": "Defines a course or subject offered, managed by a teacher.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Course entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the course (e.g., 'Operating Systems', 'Database Management Systems')."
+        },
+        "code": {
+          "type": "string",
+          "description": "A unique alphanumeric code for the course (e.g., 'CS301')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the course content and objectives."
+        },
+        "teacherId": {
+          "type": "string",
+          "description": "Reference to the Teacher who is responsible for this course. (Relationship: Teacher 1:N Course)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "code",
+        "teacherId"
+      ]
+    },
+    "CourseEnrollment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CourseEnrollment",
+      "type": "object",
+      "description": "Represents the enrollment of a student in a specific course.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the CourseEnrollment entity."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to the Student who is enrolled. (Relationship: Student N:N Course)"
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Reference to the Course in which the student is enrolled. (Relationship: Student N:N Course)"
+        },
+        "enrollmentDate": {
+          "type": "string",
+          "description": "The date when the student was enrolled in the course.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "courseId",
+        "enrollmentDate"
+      ]
+    },
+    "LecturePlan": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LecturePlan",
+      "type": "object",
+      "description": "Details the schedule and topics for a specific lecture within a course.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LecturePlan entity."
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Reference to the Course this lecture plan belongs to. (Relationship: Course 1:N LecturePlan)"
+        },
+        "lectureDate": {
+          "type": "string",
+          "description": "The scheduled date and time for the lecture.",
+          "format": "date-time"
+        },
+        "topicTitle": {
+          "type": "string",
+          "description": "The main topic to be covered in this lecture."
+        },
+        "moduleNumber": {
+          "type": "number",
+          "description": "The module number to which this lecture's topic belongs."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description or outline of the lecture content."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the lecture plan (e.g., 'Planned', 'Completed', 'Cancelled')."
+        }
+      },
+      "required": [
+        "id",
+        "courseId",
+        "lectureDate",
+        "topicTitle",
+        "moduleNumber",
+        "status"
+      ]
+    },
+    "StudyMaterial": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StudyMaterial",
+      "type": "object",
+      "description": "Represents a piece of study material (PDF, PPTX) uploaded for a course, potentially processed by ML.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the StudyMaterial entity."
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Reference to the Course this material belongs to. (Relationship: Course 1:N StudyMaterial)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title or name of the study material (e.g., 'Module 1 PDF Notes')."
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "The URL or path where the study material file is stored.",
+          "format": "uri"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "The type of the uploaded file (e.g., 'pdf', 'pptx')."
+        },
+        "uploadDateTime": {
+          "type": "string",
+          "description": "The date and time when the material was uploaded.",
+          "format": "date-time"
+        },
+        "moduleNumber": {
+          "type": "number",
+          "description": "The module number this material is primarily associated with (optional)."
+        },
+        "mlHeadings": {
+          "type": "array",
+          "description": "An array of headings detected by the machine learning model within the material.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mlTopicPageMap": {
+          "type": "array",
+          "description": "A mapping of detected topics to their corresponding page ranges within the PDF/PPTX, generated by ML.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "courseId",
+        "title",
+        "fileUrl",
+        "fileType",
+        "uploadDateTime"
+      ]
+    },
+    "Attendance": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Attendance",
+      "type": "object",
+      "description": "Records the attendance status of a single student for a specific lecture.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Attendance entity."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to the Student whose attendance is being recorded. (Relationship: Student 1:N Attendance)"
+        },
+        "lecturePlanId": {
+          "type": "string",
+          "description": "Reference to the LecturePlan for which attendance is recorded. (Relationship: LecturePlan 1:N Attendance)"
+        },
+        "status": {
+          "type": "string",
+          "description": "The attendance status of the student for this lecture (e.g., 'Present', 'Absent')."
+        },
+        "recordDateTime": {
+          "type": "string",
+          "description": "The date and time when this attendance record was created or last updated.",
+          "format": "date-time"
+        },
+        "recordedByTeacherId": {
+          "type": "string",
+          "description": "Reference to the Teacher who recorded this attendance. (Relationship: Teacher 1:N Attendance)"
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "lecturePlanId",
+        "status",
+        "recordDateTime",
+        "recordedByTeacherId"
+      ]
+    },
+    "AbsenteeNotification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AbsenteeNotification",
+      "type": "object",
+      "description": "Records details of an automated email notification sent to an absent student.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AbsenteeNotification entity."
+        },
+        "attendanceId": {
+          "type": "string",
+          "description": "Reference to the Attendance record that triggered this notification (must be an 'Absent' status). (Relationship: Attendance 1:N AbsenteeNotification)"
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to the Student who received the notification. (Relationship: Student 1:N AbsenteeNotification)"
+        },
+        "lecturePlanId": {
+          "type": "string",
+          "description": "Reference to the LecturePlan related to the missed class. (Relationship: LecturePlan 1:N AbsenteeNotification)"
+        },
+        "notificationDateTime": {
+          "type": "string",
+          "description": "The date and time when the email notification was sent.",
+          "format": "date-time"
+        },
+        "emailSubject": {
+          "type": "string",
+          "description": "The subject line of the sent email."
+        },
+        "emailSummary": {
+          "type": "string",
+          "description": "The AI-generated lecture summary included in the email body."
+        },
+        "pdfNoteFileUrls": {
+          "type": "array",
+          "description": "An array of URLs pointing to the relevant PDF notes or sections attached/linked in the email.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the notification (e.g., 'Pending', 'Sent', 'Failed')."
+        }
+      },
+      "required": [
+        "id",
+        "attendanceId",
+        "studentId",
+        "lecturePlanId",
+        "notificationDateTime",
+        "emailSubject",
+        "emailSummary",
+        "status"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/teachers/{teacherId}",
+        "definition": {
+          "entityName": "Teacher",
+          "schema": {
+            "$ref": "#/backend/entities/Teacher"
+          },
+          "description": "Stores individual teacher profiles. The document ID (`teacherId`) matches the Firebase Authentication UID for direct ownership and access control. Only the authenticated teacher can manage their own profile. Other teachers cannot directly view or edit other teacher profiles unless an explicit admin role is introduced.",
+          "params": [
+            {
+              "name": "teacherId",
+              "description": "The unique identifier of the teacher, matching their Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/students/{studentId}",
+        "definition": {
+          "entityName": "Student",
+          "schema": {
+            "$ref": "#/backend/entities/Student"
+          },
+          "description": "Stores individual student profiles. The document ID (`studentId`) can be a generated ID or match a unique student identifier. Teachers of courses a student is enrolled in can read student details. Students can read their own profile if authenticated.",
+          "params": [
+            {
+              "name": "studentId",
+              "description": "The unique identifier of the student."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/courses/{courseId}",
+        "definition": {
+          "entityName": "Course",
+          "schema": {
+            "$ref": "#/backend/entities/Course"
+          },
+          "description": "Stores information about each course. Includes the `teacherId` field to denote the primary owner and facilitator of the course, enabling direct authorization checks. Only the specified teacher can manage this course. Enrolled students can read course details.",
+          "params": [
+            {
+              "name": "courseId",
+              "description": "The unique identifier for the course."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/courses/{courseId}/lecturePlans/{lecturePlanId}",
+        "definition": {
+          "entityName": "LecturePlan",
+          "schema": {
+            "$ref": "#/backend/entities/LecturePlan"
+          },
+          "description": "Stores lecture plans for a specific course. Each document includes denormalized `courseId` (for direct reference) and `teacherId` (from the parent course) to ensure authorization independence. Only the `teacherId` can create, update, or delete lecture plans. Enrolled students can read these plans.",
+          "params": [
+            {
+              "name": "courseId",
+              "description": "The unique identifier of the parent course."
+            },
+            {
+              "name": "lecturePlanId",
+              "description": "The unique identifier for the lecture plan."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/courses/{courseId}/studyMaterials/{studyMaterialId}",
+        "definition": {
+          "entityName": "StudyMaterial",
+          "schema": {
+            "$ref": "#/backend/entities/StudyMaterial"
+          },
+          "description": "Stores study materials for a specific course. Each document includes denormalized `courseId` (for direct reference) and `teacherId` (from the parent course) for authorization independence. Only the `teacherId` can upload or manage these materials. Enrolled students can read study materials.",
+          "params": [
+            {
+              "name": "courseId",
+              "description": "The unique identifier of the parent course."
+            },
+            {
+              "name": "studyMaterialId",
+              "description": "The unique identifier for the study material."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/courses/{courseId}/enrollments/{enrollmentId}",
+        "definition": {
+          "entityName": "CourseEnrollment",
+          "schema": {
+            "$ref": "#/backend/entities/CourseEnrollment"
+          },
+          "description": "Records student enrollments in courses. Each document includes denormalized `courseId`, `teacherId` (from the parent course), `studentId`, and `studentEmail` to facilitate authorization checks and notification generation without requiring additional lookups. The `teacherId` can manage enrollments for their course. The `studentId` can read their own enrollment status.",
+          "params": [
+            {
+              "name": "courseId",
+              "description": "The unique identifier of the parent course."
+            },
+            {
+              "name": "enrollmentId",
+              "description": "The unique identifier for the course enrollment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/courses/{courseId}/lecturePlans/{lecturePlanId}/attendanceRecords/{attendanceId}",
+        "definition": {
+          "entityName": "Attendance",
+          "schema": {
+            "$ref": "#/backend/entities/Attendance"
+          },
+          "description": "Records the attendance status for a student in a specific lecture. Documents include denormalized `courseId`, `teacherId` (from the course owner), `lecturePlanId`, `studentId`, `studentEmail`, and `recordedByTeacherId` to ensure authorization independence and streamline absentee notifications. The `teacherId` can manage attendance for their course's lectures. A student can read their own attendance records.",
+          "params": [
+            {
+              "name": "courseId",
+              "description": "The unique identifier of the parent course."
+            },
+            {
+              "name": "lecturePlanId",
+              "description": "The unique identifier of the parent lecture plan."
+            },
+            {
+              "name": "attendanceId",
+              "description": "The unique identifier for the attendance record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/absenteeNotifications/{notificationId}",
+        "definition": {
+          "entityName": "AbsenteeNotification",
+          "schema": {
+            "$ref": "#/backend/entities/AbsenteeNotification"
+          },
+          "description": "Records details of automated absentee email notifications. This collection is at the top level for ease of querying across courses and students by Cloud Functions, but includes denormalized `attendanceId`, `studentId`, `studentEmail`, `lecturePlanId`, `courseId`, and `teacherId` (course owner) to ensure authorization independence. Students can read their own notifications. Teachers can read notifications relevant to their courses.",
+          "params": [
+            {
+              "name": "notificationId",
+              "description": "The unique identifier for the absentee notification."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure prioritizes **Authorization Independence** and **QAPs (Query Across Paths)** by strategically denormalizing authorization-relevant fields into each document. This approach minimizes complexity in Firestore Security Rules and enhances debuggability. All documents within a given collection share a homogeneous security posture, adhering to the **Structural Segregation** principle.\n\n**Authorization Independence:** To achieve this, `teacherId` (the course owner) and `studentId` (the student owner) are denormalized into subcollection documents where access control depends on these relationships. For instance:\n*   `LecturePlan` and `StudyMaterial` documents, nested under a `Course`, will explicitly include the `teacherId` from their parent `Course`. This allows rules to verify `request.auth.uid == resource.data.teacherId` directly.\n*   `CourseEnrollment` documents will include `teacherId` (from the course) and `studentId` (from the enrolled student), along with `studentEmail` for notification purposes, enabling independent verification of both teacher and student access.\n*   `Attendance` records, deeply nested, will denormalize `courseId`, the primary `teacherId` (course owner), and `studentId`, `studentEmail`. The `recordedByTeacherId` field also provides additional context.\n*   `AbsenteeNotification` documents, created globally for ease of access by a Cloud Function, will denormalize `studentId`, `studentEmail`, `lecturePlanId`, `courseId`, and the primary `teacherId` to ensure students can access their own notifications and teachers can query notifications for their courses without complex lookups.\n\nThis denormalization ensures that any security rule for a document can be evaluated solely based on that document's data and `request.auth.uid`, eliminating expensive and non-atomic `get()` operations on parent documents.\n\n**QAPs (Query Across Paths):** The denormalized fields are critical for enabling efficient and secure `list` operations (QAPs). Both teachers and students can perform queries that return only the data they are authorized to see:\n*   **Teachers** can list all *their* courses by querying the `/courses` collection with `where('teacherId', '==', request.auth.uid)`. They can then list *their* lecture plans, study materials, enrollments, and attendance records by applying a similar `where('teacherId', '==', request.auth.uid)` filter on the respective collections, even when nested. For example, to get all lecture plans for a teacher, a collection group query on `lecturePlans` can be used with the `teacherId` filter. Similarly, `absenteeNotifications` can be queried by `teacherId` to show notifications relevant to their courses.\n*   **Students** can list *their* enrollments, attendance records, and absentee notifications by filtering on `studentId == request.auth.uid` within the relevant collections. This ensures that students only see their personal data, and teachers only see data related to their courses. The structure supports efficient indexing for these common query patterns.\n\n**Access Modeling:** Path-based ownership (`/teachers/{teacherId}`, `/students/{studentId}`) is used for primary user profiles. Hierarchical paths (`/courses/{courseId}/lecturePlans/{lecturePlanId}`) are used for data strongly owned by a parent entity, with denormalized fields ensuring security rule independence. Global collections like `absenteeNotifications` are used when records are cross-cutting but still require denormalized ownership for security."
+  }
+}
