@@ -12,14 +12,14 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { personalizedMissedLectureRecovery } from "@/ai/flows/personalized-missed-lecture-recovery"
 
-// Mock student data
+// Updated student data with provided emails
 const initialStudents = [
-  { id: "R2023001", name: "Alice Johnson", email: "alice.j@university.edu", present: true },
-  { id: "R2023002", name: "Bob Smith", email: "bob.s@university.edu", present: true },
-  { id: "R2023003", name: "Charlie Brown", email: "charlie.b@university.edu", present: false },
-  { id: "R2023004", name: "Diana Ross", email: "diana.r@university.edu", present: true },
-  { id: "R2023005", name: "Ethan Hunt", email: "ethan.h@university.edu", present: false },
-  { id: "R2023006", name: "Fiona Apple", email: "fiona.a@university.edu", present: true },
+  { id: "R2023001", name: "Marcus Aurelius", email: "plot-manlike-fancy@duck.com", present: false },
+  { id: "R2023002", name: "Seraphina Moon", email: "wages-idly-disk@duck.com", present: false },
+  { id: "R2023003", name: "Leopold Fitz", email: "jazz-twig-paprika@duck.com", present: false },
+  { id: "R2023004", name: "Jaxon Reed", email: "pants-destiny-lid@duck.com", present: false },
+  { id: "R2023005", name: "Elowen Frost", email: "impale-bats-drool@duck.com", present: false },
+  { id: "R2023006", name: "Silas Vane", email: "silas.v@university.edu", present: true },
 ]
 
 export default function AttendancePage() {
@@ -35,21 +35,30 @@ export default function AttendancePage() {
     setIsPosting(true)
     const absentees = students.filter(s => !s.present)
     
+    if (absentees.length === 0) {
+      toast({
+        title: "No absentees",
+        description: "All students are marked present. No recovery emails needed.",
+      })
+      setIsPosting(false)
+      return
+    }
+    
     try {
       // Simulate calling the AI recovery flow for each absentee
       for (const student of absentees) {
         // In a real app, you'd fetch the lecturePlanDetails and extractedStudyMaterialText from your DB
-        // For this demo, we use placeholder content.
         await personalizedMissedLectureRecovery({
           studentName: student.name,
           studentEmail: student.email,
           lectureTopic: "Process Scheduling Algorithms",
           lectureDate: new Date().toISOString().split('T')[0],
           lecturePlanDetails: "Covering FCFS, SJF, and Round Robin scheduling techniques with practical examples.",
-          extractedStudyMaterialText: "Process scheduling is a core function of the OS...",
+          extractedStudyMaterialText: "Process scheduling is a core function of the operating system. It decides which process in the ready queue is to be allocated the CPU. FCFS (First-Come, First-Served) is the simplest algorithm where the process that requests the CPU first is allocated the CPU first. Shortest Job First (SJF) associates with each process the length of its next CPU burst. Round Robin (RR) scheduling is designed for time-sharing systems.",
           extractedHeadings: [
             { heading: "Intro to Scheduling", pageNumbers: [1, 2] },
             { heading: "FCFS Algorithm", pageNumbers: [3, 4] },
+            { heading: "Shortest Job First", pageNumbers: [5, 6] },
             { heading: "Round Robin", pageNumbers: [7, 8, 9] }
           ]
         })
@@ -57,7 +66,7 @@ export default function AttendancePage() {
       
       toast({
         title: "Attendance Posted Successfully",
-        description: `Recovery emails sent to ${absentees.length} absent students.`,
+        description: `Recovery packages generated and emails queued for ${absentees.length} students.`,
       })
     } catch (error) {
       toast({
