@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, BookOpen, CheckSquare, Mail, ArrowUpRight, ArrowDownRight } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
+import Link from "next/link"
 
 export default function DashboardPage() {
   const stats = [
@@ -105,30 +106,30 @@ export default function DashboardPage() {
             <CardTitle className="font-headline">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4">
-            <button className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed hover:border-primary hover:bg-primary/5 transition-all space-y-2 group">
+            <Link href="/dashboard/students" className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed hover:border-primary hover:bg-primary/5 transition-all space-y-2 group">
               <div className="p-2 rounded-full bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-colors">
                 <Users className="h-5 w-5" />
               </div>
               <span className="text-sm font-medium">Add Students</span>
-            </button>
-            <button className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed hover:border-primary hover:bg-primary/5 transition-all space-y-2 group">
+            </Link>
+            <Link href="/dashboard/courses" className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed hover:border-primary hover:bg-primary/5 transition-all space-y-2 group">
               <div className="p-2 rounded-full bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-colors">
                 <BookOpen className="h-5 w-5" />
               </div>
               <span className="text-sm font-medium">New Course</span>
-            </button>
-            <button className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed hover:border-primary hover:bg-primary/5 transition-all space-y-2 group">
+            </Link>
+            <Link href="/dashboard/attendance" className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed hover:border-primary hover:bg-primary/5 transition-all space-y-2 group text-center">
               <div className="p-2 rounded-full bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-colors">
                 <CheckSquare className="h-5 w-5" />
               </div>
               <span className="text-sm font-medium">Mark Attendance</span>
-            </button>
-            <button className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed hover:border-primary hover:bg-primary/5 transition-all space-y-2 group">
+            </Link>
+            <Link href="/dashboard/reports" className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed hover:border-primary hover:bg-primary/5 transition-all space-y-2 group">
               <div className="p-2 rounded-full bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-colors">
                 <Mail className="h-5 w-5" />
               </div>
               <span className="text-sm font-medium">Send Reports</span>
-            </button>
+            </Link>
           </CardContent>
         </Card>
       </div>
