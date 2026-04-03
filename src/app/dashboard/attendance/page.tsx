@@ -7,19 +7,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Search, Upload, Send, Download, CheckCircle2 } from "lucide-react"
+import { Search, Upload, Send, Download } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { personalizedMissedLectureRecovery } from "@/ai/flows/personalized-missed-lecture-recovery"
 
-// Updated student data with provided emails
+// Updated student data with provided emails and random names
 const initialStudents = [
-  { id: "R2023001", name: "Marcus Aurelius", email: "plot-manlike-fancy@duck.com", present: false },
-  { id: "R2023002", name: "Seraphina Moon", email: "wages-idly-disk@duck.com", present: false },
-  { id: "R2023003", name: "Leopold Fitz", email: "jazz-twig-paprika@duck.com", present: false },
-  { id: "R2023004", name: "Jaxon Reed", email: "pants-destiny-lid@duck.com", present: false },
-  { id: "R2023005", name: "Elowen Frost", email: "impale-bats-drool@duck.com", present: false },
-  { id: "R2023006", name: "Silas Vane", email: "silas.v@university.edu", present: true },
+  { id: "R2024-101", name: "Aria Sterling", email: "plot-manlike-fancy@duck.com", present: false },
+  { id: "R2024-102", name: "Cyrus Thorne", email: "wages-idly-disk@duck.com", present: false },
+  { id: "R2024-103", name: "Lyra Vance", email: "jazz-twig-paprika@duck.com", present: false },
+  { id: "R2024-104", name: "Kaelen Brooks", email: "pants-destiny-lid@duck.com", present: false },
+  { id: "R2024-105", name: "Elara Moon", email: "impale-bats-drool@duck.com", present: false },
+  { id: "R2024-106", name: "Silas Weaver", email: "silas.w@university.edu", present: true },
 ]
 
 export default function AttendancePage() {
@@ -45,33 +45,33 @@ export default function AttendancePage() {
     }
     
     try {
-      // Simulate calling the AI recovery flow for each absentee
+      // Calling the AI recovery flow for each absentee to generate summaries and emails
       for (const student of absentees) {
-        // In a real app, you'd fetch the lecturePlanDetails and extractedStudyMaterialText from your DB
         await personalizedMissedLectureRecovery({
           studentName: student.name,
           studentEmail: student.email,
           lectureTopic: "Process Scheduling Algorithms",
           lectureDate: new Date().toISOString().split('T')[0],
-          lecturePlanDetails: "Covering FCFS, SJF, and Round Robin scheduling techniques with practical examples.",
-          extractedStudyMaterialText: "Process scheduling is a core function of the operating system. It decides which process in the ready queue is to be allocated the CPU. FCFS (First-Come, First-Served) is the simplest algorithm where the process that requests the CPU first is allocated the CPU first. Shortest Job First (SJF) associates with each process the length of its next CPU burst. Round Robin (RR) scheduling is designed for time-sharing systems.",
+          lecturePlanDetails: "Covering FCFS, SJF, and Round Robin scheduling techniques with practical examples and performance analysis.",
+          extractedStudyMaterialText: "Process scheduling is a core function of the operating system. It decides which process in the ready queue is to be allocated the CPU. FCFS (First-Come, First-Served) is simple but can lead to the convoy effect. SJF (Shortest Job First) is optimal but difficult to implement as it requires knowing the future. Round Robin (RR) uses time quantums to ensure fairness in time-sharing systems.",
           extractedHeadings: [
             { heading: "Intro to Scheduling", pageNumbers: [1, 2] },
-            { heading: "FCFS Algorithm", pageNumbers: [3, 4] },
-            { heading: "Shortest Job First", pageNumbers: [5, 6] },
-            { heading: "Round Robin", pageNumbers: [7, 8, 9] }
+            { heading: "FCFS & Convoy Effect", pageNumbers: [3, 4] },
+            { heading: "Shortest Job First (SJF)", pageNumbers: [5, 6] },
+            { heading: "Round Robin (RR) Mechanics", pageNumbers: [7, 8, 9] }
           ]
         })
       }
       
       toast({
-        title: "Attendance Posted Successfully",
-        description: `Recovery packages generated and emails queued for ${absentees.length} students.`,
+        title: "Attendance Posted & AI Recovery Triggered",
+        description: `Recovery packages generated and simulated emails sent to ${absentees.length} students.`,
       })
     } catch (error) {
       toast({
-        title: "Error posting attendance",
         variant: "destructive",
+        title: "Error processing recovery",
+        description: "Could not generate missed lecture packages.",
       })
     } finally {
       setIsPosting(false)
@@ -83,7 +83,7 @@ export default function AttendancePage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-headline font-bold text-primary">Attendance</h2>
-          <p className="text-muted-foreground font-body">Mark students and trigger AI recovery engines.</p>
+          <p className="text-muted-foreground font-body">Mark absentees to trigger the AI Recovery Engine.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2 font-body border-primary text-primary hover:bg-primary/5">
@@ -92,7 +92,7 @@ export default function AttendancePage() {
           </Button>
           <Button variant="outline" className="gap-2 font-body border-primary text-primary hover:bg-primary/5">
             <Download className="h-4 w-4" />
-            Export Absentees
+            Export Data
           </Button>
         </div>
       </div>
@@ -118,11 +118,11 @@ export default function AttendancePage() {
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Lecture Session</label>
                 <Select defaultValue="today">
                   <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Select Date" />
+                    <SelectValue placeholder="Select Session" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="today">Today, Oct 24th - Slot 2</SelectItem>
-                    <SelectItem value="yesterday">Yesterday, Oct 23rd - Slot 4</SelectItem>
+                    <SelectItem value="prev">Yesterday, Oct 23rd - Slot 4</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -138,11 +138,11 @@ export default function AttendancePage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-[100px] font-headline">Status</TableHead>
-                  <TableHead className="font-headline">Reg. Number</TableHead>
-                  <TableHead className="font-headline">Student Name</TableHead>
+                  <TableHead className="w-[120px] font-headline">Status</TableHead>
+                  <TableHead className="font-headline">Student ID</TableHead>
+                  <TableHead className="font-headline">Name</TableHead>
                   <TableHead className="font-headline">Email</TableHead>
-                  <TableHead className="text-right font-headline">Action</TableHead>
+                  <TableHead className="text-right font-headline">Mark Attendance</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -150,14 +150,14 @@ export default function AttendancePage() {
                   <TableRow key={student.id} className="font-body hover:bg-primary/5 transition-colors">
                     <TableCell>
                       {student.present ? (
-                        <Badge variant="secondary" className="bg-green-100 text-green-700 border-none">Present</Badge>
+                        <Badge variant="secondary" className="bg-green-100 text-green-700 border-none px-3">Present</Badge>
                       ) : (
-                        <Badge variant="destructive" className="bg-red-100 text-red-700 border-none">Absent</Badge>
+                        <Badge variant="destructive" className="bg-red-100 text-red-700 border-none px-3">Absent</Badge>
                       )}
                     </TableCell>
                     <TableCell className="font-medium">{student.id}</TableCell>
                     <TableCell>{student.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{student.email}</TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-xs">{student.email}</TableCell>
                     <TableCell className="text-right">
                       <Checkbox 
                         checked={student.present} 
@@ -172,28 +172,28 @@ export default function AttendancePage() {
           </div>
           
           <div className="mt-6 flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/10">
-            <div className="flex gap-4">
+            <div className="flex gap-6">
               <div className="text-center">
-                <p className="text-xs text-muted-foreground uppercase font-medium">Total</p>
+                <p className="text-xs text-muted-foreground uppercase font-medium">Class Size</p>
                 <p className="text-xl font-headline font-bold">{students.length}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-muted-foreground uppercase font-medium">Present</p>
+                <p className="text-xs text-muted-foreground uppercase font-medium">Attending</p>
                 <p className="text-xl font-headline font-bold text-green-600">{students.filter(s => s.present).length}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-muted-foreground uppercase font-medium">Absent</p>
+                <p className="text-xs text-muted-foreground uppercase font-medium">Missing</p>
                 <p className="text-xl font-headline font-bold text-red-500">{students.filter(s => !s.present).length}</p>
               </div>
             </div>
             <Button 
               size="lg" 
-              className="gap-2 bg-primary hover:bg-primary/90 shadow-lg font-headline" 
+              className="gap-2 bg-primary hover:bg-primary/90 shadow-lg font-headline min-w-[200px]" 
               onClick={handlePost}
               disabled={isPosting}
             >
               {isPosting ? (
-                <>Processing AI Recovery...</>
+                <>Generating Recovery...</>
               ) : (
                 <>
                   <Send className="h-4 w-4" />
@@ -202,6 +202,9 @@ export default function AttendancePage() {
               )}
             </Button>
           </div>
+          <p className="mt-4 text-xs text-center text-muted-foreground font-body">
+            * Clicking "Post Attendance" will automatically send AI-generated lecture summaries to all absent students.
+          </p>
         </CardContent>
       </Card>
     </div>
