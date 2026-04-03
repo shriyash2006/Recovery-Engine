@@ -1,3 +1,16 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-dashboard",
+      "description": "A professional educational dashboard illustration",
+      "imageUrl": "https://picsum.photos/seed/ascent1/1200/600",
+      "imageHint": "education dashboard"
+    },
+    {
+      "id": "lecture-placeholder",
+      "description": "Students in a modern classroom setting",
+      "imageUrl": "https://picsum.photos/seed/ascent2/800/400",
+      "imageHint": "university classroom"
+    }
+  ]
 }
