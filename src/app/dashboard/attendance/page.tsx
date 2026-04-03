@@ -12,14 +12,14 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { personalizedMissedLectureRecovery } from "@/ai/flows/personalized-missed-lecture-recovery"
 
-// Updated student data with provided emails and names
+// Updated student data with provided emails and names, setting default to present
 const initialStudents = [
-  { id: "R2024-101", name: "Aria Sterling", email: "plot-manlike-fancy@duck.com", present: false },
-  { id: "R2024-102", name: "Cyrus Thorne", email: "wages-idly-disk@duck.com", present: false },
-  { id: "R2024-103", name: "Lyra Vance", email: "jazz-twig-paprika@duck.com", present: false },
-  { id: "R2024-104", name: "Kaelen Brooks", email: "pants-destiny-lid@duck.com", present: false },
-  { id: "R2024-105", name: "Elara Moon", email: "impale-bats-drool@duck.com", present: false },
-  { id: "R2024-106", name: "Silas Vane", email: "slouchy-stem-crook@duck.com", present: false },
+  { id: "R2024-101", name: "Aria Sterling", email: "plot-manlike-fancy@duck.com", present: true },
+  { id: "R2024-102", name: "Cyrus Thorne", email: "wages-idly-disk@duck.com", present: true },
+  { id: "R2024-103", name: "Lyra Vance", email: "jazz-twig-paprika@duck.com", present: true },
+  { id: "R2024-104", name: "Kaelen Brooks", email: "pants-destiny-lid@duck.com", present: true },
+  { id: "R2024-105", name: "Elara Moon", email: "impale-bats-drool@duck.com", present: true },
+  { id: "R2024-106", name: "Silas Vane", email: "slouchy-stem-crook@duck.com", present: true },
 ]
 
 export default function AttendancePage() {
@@ -83,7 +83,7 @@ export default function AttendancePage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-headline font-bold text-primary">Attendance</h2>
-          <p className="text-muted-foreground font-body">Mark absentees to trigger the AI Recovery Engine.</p>
+          <p className="text-muted-foreground font-body">Mark absentees by unchecking them to trigger the AI Recovery Engine.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2 font-body border-primary text-primary hover:bg-primary/5">
@@ -142,7 +142,7 @@ export default function AttendancePage() {
                   <TableHead className="font-headline">Student ID</TableHead>
                   <TableHead className="font-headline">Name</TableHead>
                   <TableHead className="font-headline">Email</TableHead>
-                  <TableHead className="text-right font-headline">Mark Attendance</TableHead>
+                  <TableHead className="text-right font-headline">Present?</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
