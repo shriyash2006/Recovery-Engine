@@ -14,7 +14,7 @@ export default function Home() {
             </div>
           </div>
           <h1 className="text-4xl sm:text-6xl font-headline font-bold text-primary tracking-tight">
-            Ascent Scholar
+            Missed Class Recovery Engine
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-body">
             Empowering students with AI-driven lecture recovery. Never miss a beat in your learning journey.
