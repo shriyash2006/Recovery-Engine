@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Upload, Send, Download } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { personalizedMissedLectureRecovery } from "@/ai/flows/personalized-missed-lecture-recovery"
 import { useFirestore, useAuth } from "@/firebase"
 import { collection, serverTimestamp } from "firebase/firestore"
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates"
@@ -83,21 +82,34 @@ export default function AttendancePage() {
       const emailResults = []
       
       for (const student of absentees) {
-        // 1. Generate AI Recovery Content
-        const recoveryData = await personalizedMissedLectureRecovery({
-          studentName: student.name,
-          studentEmail: student.email,
-          lectureTopic: "Process Scheduling Algorithms",
-          lectureDate: new Date().toISOString().split('T')[0],
-          lecturePlanDetails: "Covering FCFS, SJF, and Round Robin scheduling techniques with practical examples and performance analysis.",
-          extractedStudyMaterialText: "Process scheduling is a core function of the operating system. It decides which process in the ready queue is to be allocated the CPU. FCFS (First-Come, First-Served) is simple but can lead to the convoy effect. SJF (Shortest Job First) is optimal but difficult to implement as it requires knowing the future. Round Robin (RR) uses time quantums to ensure fairness in time-sharing systems.",
-          extractedHeadings: [
-            { heading: "Intro to Scheduling", pageNumbers: [1, 2] },
-            { heading: "FCFS & Convoy Effect", pageNumbers: [3, 4] },
-            { heading: "Shortest Job First (SJF)", pageNumbers: [5, 6] },
-            { heading: "Round Robin (RR) Mechanics", pageNumbers: [7, 8, 9] }
-          ]
-        })
+        let lectureSummary: string;
+        let aiProvider = 'Fallback';
+        
+        try {
+          // Call the multi-provider AI service via API
+          const aiResponse = await fetch('/api/generate-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              studentName: student.name,
+              topic: 'Process Scheduling Algorithms',
+              content: 'Process scheduling is a core function of the operating system. It decides which process in the ready queue is to be allocated the CPU. FCFS (First-Come, First-Served) is simple but can lead to the convoy effect. SJF (Shortest Job First) is optimal but difficult to implement. Round Robin (RR) uses time quantums to ensure fairness.',
+            }),
+          });
+
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            lectureSummary = aiData.summary;
+            aiProvider = aiData.provider;
+            console.log(`✓ Summary generated using ${aiProvider}`);
+          } else {
+            throw new Error('AI API failed');
+          }
+        } catch (aiError) {
+          console.error('All AI providers failed, using simple fallback:', aiError);
+          lectureSummary = `Dear ${student.name},\n\nYou missed today's Operating Systems class on Process Scheduling Algorithms.\n\nKey Topics:\n- FCFS (First-Come, First-Served)\n- SJF (Shortest Job First)\n- Round Robin Scheduling\n\nPlease review your course materials.`;
+          aiProvider = 'Simple Fallback';
+        }
 
         // 2. Send email via API
         // Sending to your verified Resend email address
@@ -110,7 +122,7 @@ export default function AttendancePage() {
             subjectName: "Operating Systems (CS302)",
             lectureTopic: "Process Scheduling Algorithms",
             lectureDate: new Date().toISOString().split('T')[0],
-            summary: recoveryData.lectureSummary,
+            summary: lectureSummary,
           }),
         })
 
@@ -134,9 +146,10 @@ export default function AttendancePage() {
           studentId: student.id,
           studentEmail: student.email,
           lectureTopic: "Process Scheduling Algorithms",
-          emailSubject: recoveryData.emailSubject || "Missed Class Recovery",
-          emailSummary: recoveryData.lectureSummary || "",
-          emailBody: recoveryData.emailBody || "",
+          emailSubject: "Missed Class Recovery — Operating Systems",
+          emailSummary: lectureSummary,
+          emailBody: lectureSummary,
+          aiProvider: aiProvider, // Track which AI was used
           status: emailResult.success ? "Sent" : "Failed",
           emailMessageId: emailResult.messageId || null,
           notificationDateTime: serverTimestamp(),

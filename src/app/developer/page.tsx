@@ -21,7 +21,7 @@ export default function DeveloperPage() {
             <div className="p-2 bg-primary rounded-md">
               <Terminal className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">Ascent Scholar // Dev Console</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Recovery Engine // Dev Console</h1>
           </div>
           <div className="flex gap-4">
             <Button variant="outline" className="border-[#30363d] text-[#c9d1d9] hover:bg-[#161b22] gap-2">

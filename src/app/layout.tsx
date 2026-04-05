@@ -2,7 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Ascent Scholar - Missed Lecture Recovery',
+  title: 'Recovery Engine - Missed Lecture Recovery',
   description: 'AI-powered lecture recovery system for absent students.',
 };
 

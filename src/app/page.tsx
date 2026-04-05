@@ -63,7 +63,7 @@ export default function Home() {
         </div>
 
         <footer className="text-center pt-12 text-sm text-muted-foreground font-body">
-          &copy; {new Date().getFullYear()} Ascent Scholar Recovery Engine. All rights reserved.
+          &copy; {new Date().getFullYear()} Recovery Engine. All rights reserved.
         </footer>
       </div>
     </div>

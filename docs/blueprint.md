@@ -1,4 +1,4 @@
-# **App Name**: Ascent Scholar
+# **App Name**: Recovery Engine
 
 ## Core Features:
 

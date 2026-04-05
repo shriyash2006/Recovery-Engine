@@ -26,7 +26,7 @@ export async function sendRecoveryEmail(params: RecoveryEmailParams): Promise<Em
 
   try {
     const { data, error } = await resend.emails.send({
-      from: 'Ascent Scholar <onboarding@resend.dev>', // Use your verified domain
+      from: 'Recovery Engine <onboarding@resend.dev>', // Use your verified domain
       to: [to],
       subject: `Missed Class Recovery — ${subjectName} — ${lectureTopic}`,
       html: `
@@ -64,7 +64,7 @@ export async function sendRecoveryEmail(params: RecoveryEmailParams): Promise<Em
                 <p>Please review this material and reach out to your instructor if you have any questions.</p>
                 
                 <p>Best regards,<br>
-                <strong>Ascent Scholar Team</strong></p>
+                <strong>Recovery Engine Team</strong></p>
               </div>
               <div class="footer">
                 <p>This is an automated message from the Missed Class Recovery Engine</p>
