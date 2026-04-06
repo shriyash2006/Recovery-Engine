@@ -18,12 +18,13 @@ import { useUser } from "@/firebase/provider"
 
 // Student data with requested emails
 const initialStudents = [
-  { id: "R2024-101", name: "Aria Sterling", email: "plot-manlike-fancy@duck.com", present: true },
+  { id: "R2024-101", name: "Shriyash", email: "plot-manlike-fancy@duck.com", present: true },
   { id: "R2024-102", name: "Cyrus Thorne", email: "wages-idly-disk@duck.com", present: true },
   { id: "R2024-103", name: "Lyra Vance", email: "jazz-twig-paprika@duck.com", present: true },
   { id: "R2024-104", name: "Kaelen Brooks", email: "pants-destiny-lid@duck.com", present: true },
   { id: "R2024-105", name: "Elara Moon", email: "impale-bats-drool@duck.com", present: true },
   { id: "R2024-106", name: "Silas Vane", email: "slouchy-stem-crook@duck.com", present: true },
+  { id: "R2024-107", name: "Atharv", email: "atharv.24bet10005@vitbhopal.ac.in", present: true },
 ]
 
 export default function AttendancePage() {
