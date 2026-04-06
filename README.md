@@ -1,4 +1,4 @@
-                                                   # 📚 Recovery Engine
+# 📚 Recovery Engine
 
 <div align="center">
 
