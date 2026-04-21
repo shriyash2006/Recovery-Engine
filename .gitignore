@@ -43,3 +43,13 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+
+# IDE and editor files
+.agents/
+.kiro/
+.vscode/
+.idx/
+.modified
+*.swp
+*.swo
+*~

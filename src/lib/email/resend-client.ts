@@ -1,7 +1,8 @@
 import { Resend } from 'resend';
 
 // Initialize Resend with API key from environment
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Use a placeholder during build if not set
+const resend = new Resend(process.env.RESEND_API_KEY || 'placeholder_key_for_build');
 
 export interface RecoveryEmailParams {
   to: string;
