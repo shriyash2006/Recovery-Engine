@@ -1,9 +1,5 @@
 import { Resend } from 'resend';
 
-// Initialize Resend with API key from environment
-// Use a placeholder during build if not set
-const resend = new Resend(process.env.RESEND_API_KEY || 'placeholder_key_for_build');
-
 export interface RecoveryEmailParams {
   to: string;
   studentName: string;
@@ -20,12 +16,24 @@ export interface EmailResult {
 }
 
 /**
+ * Get or create Resend client instance
+ */
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is not configured');
+  }
+  return new Resend(apiKey);
+}
+
+/**
  * Send a recovery email to an absent student
  */
 export async function sendRecoveryEmail(params: RecoveryEmailParams): Promise<EmailResult> {
   const { to, studentName, subjectName, lectureTopic, lectureDate, summary } = params;
 
   try {
+    const resend = getResendClient();
     const { data, error } = await resend.emails.send({
       from: 'Recovery Engine <onboarding@resend.dev>', // Use your verified domain
       to: [to],
