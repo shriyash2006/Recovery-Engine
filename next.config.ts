@@ -1,13 +1,12 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  output: 'export', // Enable static export for Firebase Hosting
+  /* Next.js standard build mode (supports API routes & Server Actions) */
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   images: {
     unoptimized: true, // Required for static export

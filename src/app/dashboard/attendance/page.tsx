@@ -1,20 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Search, Upload, Send, Download } from "lucide-react"
+import { Search, Send, Plus, Trash2, ShieldAlert, ArrowRight, UserPlus } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { useFirestore, useAuth } from "@/firebase"
+import { useFirestore } from "@/firebase"
 import { collection, serverTimestamp } from "firebase/firestore"
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates"
-import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login"
-import { useUser } from "@/firebase/provider"
+import { useUserRole } from "@/hooks/use-user-role"
+import Link from "next/link"
 
 // Student data with requested emails
 const initialStudents = [
@@ -30,21 +31,77 @@ const initialStudents = [
 export default function AttendancePage() {
   const [students, setStudents] = useState(initialStudents)
   const [isPosting, setIsPosting] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newStudentId, setNewStudentId] = useState("")
+  const [newStudentName, setNewStudentName] = useState("")
+  const [newStudentEmail, setNewStudentEmail] = useState("")
+
   const { toast } = useToast()
   const db = useFirestore()
-  const auth = useAuth()
-  const { user, isUserLoading } = useUser()
-
-  // Auto-login anonymously if not authenticated
-  useEffect(() => {
-    if (!isUserLoading && !user && auth) {
-      console.log("Auto-signing in anonymously...")
-      initiateAnonymousSignIn(auth)
-    }
-  }, [user, isUserLoading, auth])
+  const { user, isTeacher, isStudent, loading } = useUserRole()
 
   const toggleAttendance = (id: string) => {
+    if (!isTeacher) return
     setStudents(prev => prev.map(s => s.id === id ? { ...s, present: !s.present } : s))
+  }
+
+  const handleAddStudent = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!isTeacher) {
+      toast({
+        variant: "destructive",
+        title: "Permission Denied",
+        description: "Only teachers or professors can add students to the class.",
+      })
+      return
+    }
+
+    if (!newStudentId || !newStudentName || !newStudentEmail) {
+      toast({
+        variant: "destructive",
+        title: "Missing Fields",
+        description: "Please fill in student ID, name, and email.",
+      })
+      return
+    }
+
+    setStudents(prev => [
+      ...prev,
+      {
+        id: newStudentId,
+        name: newStudentName,
+        email: newStudentEmail,
+        present: true,
+      }
+    ])
+
+    setNewStudentId("")
+    setNewStudentName("")
+    setNewStudentEmail("")
+    setShowAddForm(false)
+
+    toast({
+      title: "Student Added",
+      description: `${newStudentName} (${newStudentId}) has been enrolled in the class.`,
+    })
+  }
+
+  const handleRemoveStudent = (id: string, name: string) => {
+    if (!isTeacher) {
+      toast({
+        variant: "destructive",
+        title: "Permission Denied",
+        description: "Only teachers or professors can remove students from the class.",
+      })
+      return
+    }
+
+    setStudents(prev => prev.filter(s => s.id !== id))
+    toast({
+      title: "Student Removed",
+      description: `${name} has been removed from this class roster.`,
+    })
   }
 
   const handlePost = async () => {
@@ -189,24 +246,116 @@ export default function AttendancePage() {
     }
   }
 
+  const filteredStudents = students.filter(s => 
+    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.email.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
   return (
     <div className="space-y-6">
+      {/* Role Banner for Student */}
+      {isStudent && (
+        <Card className="border-l-4 border-l-accent bg-accent/5 p-4">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="text-sm font-semibold font-headline text-primary">Student Access Notice</h4>
+              <p className="text-xs text-muted-foreground">
+                You are viewing the class roster and attendance status in read-only mode. Only professors can add/remove students or submit attendance records. You can check your upcoming lecture schedule in the Planner.
+              </p>
+              <div className="pt-2">
+                <Button size="sm" variant="outline" asChild className="gap-1 text-xs h-7">
+                  <Link href="/dashboard/planner">
+                    Go to Class Schedule <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-primary">Attendance</h2>
-          <p className="text-muted-foreground font-body">Uncheck students to mark them absent and trigger AI Recovery.</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-3xl font-headline font-bold text-primary">Attendance & Roster</h2>
+            <Badge variant={isTeacher ? "default" : "secondary"}>
+              {isTeacher ? "Teacher / Professor Mode" : "Student View"}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground font-body">
+            {isTeacher 
+              ? "Manage enrolled students, uncheck absentees, and trigger AI recovery emails."
+              : "View current class enrollment and attendance statuses."}
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="gap-2 font-body border-primary text-primary hover:bg-primary/5">
-            <Upload className="h-4 w-4" />
-            Import Excel
-          </Button>
-          <Button variant="outline" className="gap-2 font-body border-primary text-primary hover:bg-primary/5">
-            <Download className="h-4 w-4" />
-            Export Data
-          </Button>
-        </div>
+
+        {isTeacher && (
+          <div className="flex gap-2">
+            <Button 
+              className="gap-2 font-body bg-primary hover:bg-primary/90"
+              onClick={() => setShowAddForm(!showAddForm)}
+            >
+              <UserPlus className="h-4 w-4" />
+              {showAddForm ? "Close Form" : "Add Student"}
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* Teacher Add Student Form */}
+      {isTeacher && showAddForm && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-headline">Add New Student to Class</CardTitle>
+            <CardDescription className="text-xs">
+              Enroll a new student by entering their academic ID, name, and notification email.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddStudent} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+              <div className="space-y-1">
+                <Label htmlFor="stdId" className="text-xs">Student ID</Label>
+                <Input
+                  id="stdId"
+                  placeholder="e.g. R2024-108"
+                  value={newStudentId}
+                  onChange={(e) => setNewStudentId(e.target.value)}
+                  className="bg-background text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="stdName" className="text-xs">Full Name</Label>
+                <Input
+                  id="stdName"
+                  placeholder="e.g. Maya Lin"
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value)}
+                  className="bg-background text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="stdEmail" className="text-xs">Email Address</Label>
+                <Input
+                  id="stdEmail"
+                  type="email"
+                  placeholder="maya@student.edu"
+                  value={newStudentEmail}
+                  onChange={(e) => setNewStudentEmail(e.target.value)}
+                  className="bg-background text-sm"
+                  required
+                />
+              </div>
+              <Button type="submit" className="gap-1 font-body">
+                <Plus className="h-4 w-4" /> Enroll Student
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border-none shadow-sm">
         <CardHeader className="pb-3">
@@ -240,7 +389,12 @@ export default function AttendancePage() {
             </div>
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search students..." className="pl-9 bg-background" />
+              <Input 
+                placeholder="Search students..." 
+                className="pl-9 bg-background" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </div>
         </CardHeader>
@@ -253,11 +407,12 @@ export default function AttendancePage() {
                   <TableHead className="font-headline">Student ID</TableHead>
                   <TableHead className="font-headline">Name</TableHead>
                   <TableHead className="font-headline">Email</TableHead>
-                  <TableHead className="text-right font-headline">Present?</TableHead>
+                  <TableHead className="text-center font-headline">Present?</TableHead>
+                  {isTeacher && <TableHead className="text-right font-headline">Manage</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {students.map((student) => (
+                {filteredStudents.map((student) => (
                   <TableRow key={student.id} className="font-body hover:bg-primary/5 transition-colors">
                     <TableCell>
                       {student.present ? (
@@ -269,20 +424,34 @@ export default function AttendancePage() {
                     <TableCell className="font-medium">{student.id}</TableCell>
                     <TableCell>{student.name}</TableCell>
                     <TableCell className="text-muted-foreground font-mono text-xs">{student.email}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-center">
                       <Checkbox 
                         checked={student.present} 
                         onCheckedChange={() => toggleAttendance(student.id)}
+                        disabled={!isTeacher}
                         className="h-5 w-5 border-primary data-[state=checked]:bg-primary"
                       />
                     </TableCell>
+                    {isTeacher && (
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveStudent(student.id, student.name)}
+                          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          title="Remove student from class"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
           
-          <div className="mt-6 flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/10">
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/10 gap-4">
             <div className="flex gap-6">
               <div className="text-center">
                 <p className="text-xs text-muted-foreground uppercase font-medium">Class Size</p>
@@ -297,27 +466,35 @@ export default function AttendancePage() {
                 <p className="text-xl font-headline font-bold text-red-500">{students.filter(s => !s.present).length}</p>
               </div>
             </div>
-            <Button 
-              size="lg" 
-              className="gap-2 bg-primary hover:bg-primary/90 shadow-lg font-headline min-w-[200px]" 
-              onClick={handlePost}
-              disabled={isPosting}
-            >
-              {isPosting ? (
-                <>Generating Recovery...</>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  Post Attendance
-                </>
-              )}
-            </Button>
+
+            {isTeacher ? (
+              <Button 
+                size="lg" 
+                className="gap-2 bg-primary hover:bg-primary/90 shadow-lg font-headline min-w-[200px]" 
+                onClick={handlePost}
+                disabled={isPosting}
+              >
+                {isPosting ? (
+                  <>Generating Recovery...</>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    Post Attendance
+                  </>
+                )}
+              </Button>
+            ) : (
+              <div className="text-xs text-muted-foreground italic">
+                Attendance can only be posted by the course instructor.
+              </div>
+            )}
           </div>
           <p className="mt-4 text-xs text-center text-muted-foreground font-body">
-            * Clicking "Post Attendance" will automatically send AI-generated lecture summaries to all absent students.
+            * Clicking &quot;Post Attendance&quot; will automatically send AI-generated lecture summaries to all absent students.
           </p>
         </CardContent>
       </Card>
     </div>
   )
 }
+
