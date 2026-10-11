@@ -26,11 +26,11 @@ export default function Home() {
             <CardHeader>
               <ShieldCheck className="h-8 w-8 text-accent mb-2" />
               <CardTitle className="font-headline">Teacher Portal</CardTitle>
-              <CardDescription>Manage classes, attendance, and study materials.</CardDescription>
+              <CardDescription>Manage classes, add/remove students, and mark attendance.</CardDescription>
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full bg-primary hover:bg-primary/90">
-                <Link href="/dashboard">Teacher Login</Link>
+                <Link href="/login">Teacher Login</Link>
               </Button>
             </CardContent>
           </Card>
@@ -38,12 +38,12 @@ export default function Home() {
           <Card className="border-none shadow-xl hover:shadow-2xl transition-shadow bg-card">
             <CardHeader>
               <BookOpen className="h-8 w-8 text-accent mb-2" />
-              <CardTitle className="font-headline">Admin Portal</CardTitle>
-              <CardDescription>Configure system settings and manage courses.</CardDescription>
+              <CardTitle className="font-headline">Student Portal</CardTitle>
+              <CardDescription>View lecture plans, schedule, and missed class summaries.</CardDescription>
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full bg-primary hover:bg-primary/90">
-                <Link href="/dashboard">Admin Login</Link>
+                <Link href="/login">Student Login</Link>
               </Button>
             </CardContent>
           </Card>

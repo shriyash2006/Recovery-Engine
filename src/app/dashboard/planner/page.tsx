@@ -1,10 +1,16 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+"use client"
+
+import { useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Calendar as CalendarIcon, Plus, MapPin, Clock } from "lucide-react"
+import { Calendar as CalendarIcon, Plus, MapPin, Clock, BookOpen, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { useUserRole } from "@/hooks/use-user-role"
 
 export default function PlannerPage() {
-  const schedule = [
+  const { isTeacher } = useUserRole()
+
+  const [schedule, setSchedule] = useState([
     { 
       day: "Monday", 
       date: "Oct 23", 
@@ -20,22 +26,69 @@ export default function PlannerPage() {
         { time: "11:00 AM", course: "Operating Systems", topic: "Process Scheduling Algorithms", room: "Room 402", status: "Ongoing" },
         { time: "03:00 PM", course: "Machine Learning", topic: "Linear Regression Intro", room: "Lecture Hall 1", status: "Upcoming" }
       ]
+    },
+    { 
+      day: "Wednesday", 
+      date: "Oct 25", 
+      sessions: [
+        { time: "10:00 AM", course: "Operating Systems", topic: "CPU Scheduling & Concurrency", room: "Room 402", status: "Upcoming" },
+        { time: "02:00 PM", course: "Database Management", topic: "Relational Algebra & Normalization", room: "Lab B", status: "Upcoming" }
+      ]
     }
-  ]
+  ])
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-headline font-bold text-primary">Lecture Planner</h2>
-          <p className="text-muted-foreground font-body">Coordinate dates, slots, and teaching topics.</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-3xl font-headline font-bold text-primary">
+              {isTeacher ? "Lecture Planner" : "Class Schedule & Planner"}
+            </h2>
+            <Badge variant={isTeacher ? "default" : "secondary"}>
+              {isTeacher ? "Teacher Mode" : "Student View"}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground font-body">
+            {isTeacher 
+              ? "Coordinate dates, slots, prerequisites, and teaching topics."
+              : "Review your upcoming lecture schedule, topics, and room allocations."}
+          </p>
         </div>
-        <Button className="gap-2 font-headline bg-primary hover:bg-primary/90">
-          <Plus className="h-4 w-4" />
-          Schedule Topic
-        </Button>
+
+        {isTeacher && (
+          <Button className="gap-2 font-headline bg-primary hover:bg-primary/90">
+            <Plus className="h-4 w-4" />
+            Schedule Topic
+          </Button>
+        )}
       </div>
 
+      {/* Next Class Highlight (Specially curated for students) */}
+      <Card className="border-none shadow-md bg-gradient-to-r from-primary/10 via-primary/5 to-background p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-accent" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Next Upcoming Class
+              </span>
+            </div>
+            <h3 className="text-xl font-headline font-bold text-primary">
+              Operating Systems (CS302) — Process Scheduling Algorithms
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Tuesday, Oct 24 • 11:00 AM • Room 402
+            </p>
+          </div>
+          <Badge className="bg-accent text-white border-none px-3 py-1 font-headline">
+            Starts in 45 mins
+          </Badge>
+        </div>
+      </Card>
+
+      {/* Full Schedule List */}
       <div className="grid gap-8">
         {schedule.map((dayPlan) => (
           <div key={dayPlan.date} className="space-y-4">
@@ -70,7 +123,9 @@ export default function PlannerPage() {
                           <Badge variant={session.status === 'Completed' ? 'secondary' : 'outline'} className="font-body">
                             {session.status}
                           </Badge>
-                          <Button size="sm" variant="ghost" className="text-accent hover:text-accent hover:bg-accent/10">Edit</Button>
+                          {isTeacher && (
+                            <Button size="sm" variant="ghost" className="text-accent hover:text-accent hover:bg-accent/10">Edit</Button>
+                          )}
                         </div>
                       </div>
                     </div>
