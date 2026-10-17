@@ -37,7 +37,13 @@ export function useUserRole() {
         setLoading(false);
       },
       (err) => {
-        console.error("useUserRole error:", err);
+        console.warn("useUserRole: could not load profile from Firestore, using default profile fallback:", err);
+        setProfile({
+          id: user.uid,
+          email: user.email || "",
+          displayName: user.displayName || user.email?.split("@")[0] || "User",
+          role: "teacher",
+        });
         setLoading(false);
       }
     );

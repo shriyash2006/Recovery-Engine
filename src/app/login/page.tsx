@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,14 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GraduationCap, ShieldCheck, BookOpen, AlertCircle, ArrowRight } from "lucide-react";
-import { useAuth, useFirestore } from "@/firebase";
-import { loginWithEmail, registerWithEmail, loginWithGoogle, UserRole } from "@/lib/auth/auth-service";
+import { useAuth, useFirestore, useUser } from "@/firebase";
+import { loginWithEmail, registerWithEmail, loginWithGoogle, handleGoogleRedirectResult, UserRole } from "@/lib/auth/auth-service";
 import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
   const db = useFirestore();
+  const { user, isUserLoading } = useUser();
   const { toast } = useToast();
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -24,6 +25,29 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // If already signed in, forward immediately to dashboard
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      router.replace("/dashboard");
+    }
+  }, [user, isUserLoading, router]);
+
+  // Handle redirect result after signInWithRedirect (fallback for popup failures)
+  useEffect(() => {
+    if (!auth || !db) return;
+    handleGoogleRedirectResult(auth, db, role).then((result) => {
+      if (result) {
+        toast({
+          title: "Signed In with Google",
+          description: "Welcome to Recovery Engine.",
+        });
+        router.replace("/dashboard");
+      }
+    }).catch((err) => {
+      console.error("Redirect result error:", err);
+    });
+  }, [auth, db]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,19 +91,24 @@ export default function LoginPage() {
     if (!auth || !db) return;
     setLoading(true);
     try {
-      await loginWithGoogle(auth, db, role);
-      toast({
-        title: "Signed In with Google",
-        description: "Welcome to Recovery Engine.",
-      });
-      router.push("/dashboard");
+      const res = await loginWithGoogle(auth, db, role);
+      if ('redirected' in res && res.redirected) {
+        // Full page redirect initiated; keep loading spinner active while browser navigates
+        return;
+      }
+      if ('user' in res && res.user) {
+        toast({
+          title: "Signed In with Google",
+          description: "Welcome to Recovery Engine.",
+        });
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       toast({
         variant: "destructive",
         title: "Google Sign-In Failed",
         description: err.message || "Failed to authenticate with Google.",
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -107,22 +136,20 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setMode("signin")}
-              className={`flex-1 pb-3 text-sm font-medium border-b-2 transition-colors ${
-                mode === "signin"
+              className={`flex-1 pb-3 text-sm font-medium border-b-2 transition-colors ${mode === "signin"
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               Sign In
             </button>
             <button
               type="button"
               onClick={() => setMode("signup")}
-              className={`flex-1 pb-3 text-sm font-medium border-b-2 transition-colors ${
-                mode === "signup"
+              className={`flex-1 pb-3 text-sm font-medium border-b-2 transition-colors ${mode === "signup"
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               Create Account
             </button>

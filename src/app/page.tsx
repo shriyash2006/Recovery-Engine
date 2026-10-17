@@ -1,9 +1,41 @@
+"use client";
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, GraduationCap, ShieldCheck, Terminal } from 'lucide-react';
 
 export default function Home() {
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  // If user is already authenticated (or just returned from Google OAuth redirect), forward to dashboard
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, isUserLoading, router]);
+
+  // While checking auth status or actively forwarding a logged-in user
+  if (isUserLoading || user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="bg-primary p-3 rounded-2xl shadow-lg animate-pulse">
+            <GraduationCap className="h-10 w-10 text-primary-foreground" />
+          </div>
+          <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <p className="text-sm font-body text-muted-foreground">
+            {user ? "Redirecting to your dashboard..." : "Loading Recovery Engine..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 sm:p-8">
       <div className="max-w-4xl w-full space-y-8">

@@ -2,6 +2,8 @@ import {
   Auth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -50,17 +52,94 @@ export async function syncUserProfile(
 }
 
 /**
- * Sign in or sign up with Google OAuth
+ * Check for a pending Google redirect result (call on app init).
+ * After signInWithRedirect, Firebase redirects back to the app
+ * and getRedirectResult() retrieves the credential.
+ */
+export async function handleGoogleRedirectResult(
+  auth: Auth,
+  db: Firestore,
+  rolePreference?: UserRole
+): Promise<{ user: User; profile: UserProfile } | null> {
+  try {
+    let effectiveRole: UserRole = rolePreference || 'student';
+    if (typeof window !== 'undefined') {
+      try {
+        const storedRole = sessionStorage.getItem('recovery_auth_pending_role');
+        if (storedRole && (storedRole === 'teacher' || storedRole === 'professor' || storedRole === 'student')) {
+          effectiveRole = storedRole as UserRole;
+        }
+        sessionStorage.removeItem('recovery_auth_pending_role');
+      } catch {}
+    }
+
+    const result = await getRedirectResult(auth);
+    if (result?.user) {
+      try {
+        const profile = await syncUserProfile(db, result.user, effectiveRole);
+        return { user: result.user, profile };
+      } catch (dbErr) {
+        console.warn('Could not sync profile to Firestore, using fallback profile:', dbErr);
+        return {
+          user: result.user,
+          profile: {
+            id: result.user.uid,
+            email: result.user.email || '',
+            displayName: result.user.displayName || result.user.email?.split('@')[0] || 'User',
+            role: effectiveRole,
+          },
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('getRedirectResult error:', err);
+  }
+  return null;
+}
+
+/**
+ * Sign in or sign up with Google OAuth.
+ * Tries popup first; if it fails with auth/invalid-continue-uri or
+ * auth/popup-blocked, falls back to redirect-based sign-in.
  */
 export async function loginWithGoogle(
   auth: Auth,
   db: Firestore,
   rolePreference: UserRole = 'student'
-): Promise<{ user: User; profile: UserProfile }> {
+): Promise<{ user: User; profile: UserProfile } | { redirected: true }> {
   const provider = new GoogleAuthProvider();
-  const credential = await signInWithPopup(auth, provider);
-  const profile = await syncUserProfile(db, credential.user, rolePreference);
-  return { user: credential.user, profile };
+
+  try {
+    const credential = await signInWithPopup(auth, provider);
+    const profile = await syncUserProfile(db, credential.user, rolePreference);
+    return { user: credential.user, profile };
+  } catch (err: any) {
+    // If popup fails due to domain/URI issues or being blocked, fall back to redirect
+    const fallbackCodes = [
+      'auth/invalid-continue-uri',
+      'auth/unauthorized-domain',
+      'auth/popup-blocked',
+    ];
+
+    if (fallbackCodes.includes(err.code)) {
+      console.warn(
+        `Google popup sign-in failed (${err.code}). Falling back to redirect flow.` +
+        '\nTo fix popups permanently, add your domain (including localhost) to:' +
+        '\n  1. Firebase Console → Authentication → Settings → Authorized domains' +
+        '\n  2. Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 → Authorized redirect URIs'
+      );
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('recovery_auth_pending_role', rolePreference);
+        } catch {}
+      }
+      await signInWithRedirect(auth, provider);
+      return { redirected: true };
+    }
+
+    // Re-throw any other error (wrong credentials, network, popup closed, etc.)
+    throw err;
+  }
 }
 
 /**
